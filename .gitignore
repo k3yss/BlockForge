@@ -1,4 +1,11 @@
-Thought-process.md
+.devenv*
+devenv.local.nix
 
-.devenv
 .direnv
+
+target/
+
+src/__pycache__
+
+# ignore all the __pycache__
+**/__pycache__/*

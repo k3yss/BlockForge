@@ -15,6 +15,11 @@
 - `vin[index].prevout.scriptpubkey_asm`: The locking script that needs to be satisfied to spend the output in its assembly format.
 
 - `vin[index].prevout.scriptpubkey_type`: The type of the locking script (e.g., p2wpkh for Pay-to-Witness-Public-Key-Hash).
+    - `p2pkh`: 
+    - `v0_p2wpkh`: Version 0 Pay-to-Witness-Public-Key-Hash
+    - `v1_p2tr`
+    - `p2sh`
+    - `v0_p2wsh`
 
 - `vin[index].prevout.scriptpubkey_address`:  The Bitcoin address associated with the locking script who received the money in the first place (previous recepient) ([NOTE]:This is not the final recepient).
 
@@ -41,15 +46,13 @@
     - `vout[index].scriptpubkey` looks forward and sets the conditions for future spending, while `vin[index].prevout.scriptpubkey` looks backward and references the conditions that were set in the past for the outputs being spent.
 - `vout[index].scriptpubkey_asm`: The above but in assembly format.
 
+    [TODO:]['v0_p2wpkh', 'p2sh', 'p2pkh', 'v1_p2tr', 'v0_p2wsh', 'unknown', 'op_return']
 - `vout[index].scriptpubkey_type`: The type of scriptpubkey
 
 - `vout[index].scriptpubkey_address`: The address of the receipent 
 
 - `vout[index].value`: The amount to be received by the receipient
  
-
-
-
 > ref:
 
 ```json
@@ -64,7 +67,7 @@
         "scriptpubkey": "0014d817581d6c580afe261df66d2e2d5e8b809cd9f9",
         "scriptpubkey_asm": "OP_0 OP_PUSHBYTES_20 d817581d6c580afe261df66d2e2d5e8b809cd9f9",
         "scriptpubkey_type": "v0_p2wpkh",
-        "scriptpubkey_address": "bc1qmqt4s8tvtq90ufsa7ekjut273wqfek0eejlcju",
+        "scriptpubkey_address": "bplcju",
         "value": 44714275
       },
       "scriptsig": "",
