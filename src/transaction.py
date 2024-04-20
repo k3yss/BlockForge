@@ -1,7 +1,119 @@
 # A transaction classs with a constructor and a method to parse the transaction
 import logging
-from . import helper
 
+from . import helper
+from pycoin.ecdsa.secp256k1 import secp256k1_generator
+import hashlib, secrets
+
+
+def parse_element(hex_str, offset, element_size):
+    """
+    :param hex_str: string to parse the element from.
+    :type hex_str: hex str
+    :param offset: initial position of the object inside the hex_str.
+    :type offset: int
+    :param element_size: size of the element to extract.
+    :type element_size: int
+    :return: The extracted element from the provided string, and the updated offset after extracting it.
+    :rtype tuple(str, int)
+    """
+
+    return hex_str[offset : offset + element_size], offset + element_size
+
+
+def dissect_signature(hex_sig):
+    """
+    Extracts the r, s and ht components from a Bitcoin ECDSA signature.
+    :param hex_sig: Signature in  hex format.
+    :type hex_sig: hex str
+    :return: r, s, t as a tuple.
+    :rtype: tuple(str, str, str)
+    """
+
+    offset = 0
+    # Check the sig contains at least the size and sequence marker
+    assert len(hex_sig) > 4, "Wrong signature format."
+    sequence, offset = parse_element(hex_sig, offset, 2)
+    # Check sequence marker is correct
+    assert sequence == "30", "Wrong sequence marker."
+    signature_length, offset = parse_element(hex_sig, offset, 2)
+    # Check the length of the remaining part matches the length of the signature + the length of the hashflag (1 byte)
+    assert len(hex_sig[offset:]) / 2 == int(signature_length, 16) + 1, "Wrong length."
+    # Get r
+    marker, offset = parse_element(hex_sig, offset, 2)
+    assert marker == "02", "Wrong r marker."
+    len_r, offset = parse_element(hex_sig, offset, 2)
+    len_r_int = int(len_r, 16) * 2  # Each byte represents 2 characters
+    r, offset = parse_element(hex_sig, offset, len_r_int)
+    # Get s
+    marker, offset = parse_element(hex_sig, offset, 2)
+    assert marker == "02", "Wrong s marker."
+    len_s, offset = parse_element(hex_sig, offset, 2)
+    len_s_int = int(len_s, 16) * 2  # Each byte represents 2 characters
+    s, offset = parse_element(hex_sig, offset, len_s_int)
+    # Get ht
+    ht, offset = parse_element(hex_sig, offset, 2)
+    assert offset == len(hex_sig), "Wrong parsing."
+
+    return r, s, ht
+
+
+# https://wiki.bitcoinsv.io/index.php/OP_CHECKSIG
+def message_serialize(json_data, sighash_type=1) -> str:
+    transaction_after_opcod_checksig_serialisation = json_data["version"].to_bytes(
+        4, byteorder="little"
+    )
+
+    transaction_after_opcod_checksig_serialisation += helper.compact_size(
+        len(json_data["vin"])
+    )
+
+    for vin in json_data["vin"]:
+        vin_after_serialising = helper.vin_message_serialize(vin)
+        transaction_after_opcod_checksig_serialisation += vin_after_serialising
+
+    # logging.debug(f'{transaction_after_opcod_checksig_serialisation.hex()=}')
+
+    transaction_after_opcod_checksig_serialisation += helper.compact_size(
+        len(json_data["vout"])
+    )
+
+    for vout in json_data["vout"]:
+        transaction_after_opcod_checksig_serialisation += helper.vout_message_serialize(
+            vout
+        )
+
+    transaction_after_opcod_checksig_serialisation += json_data["locktime"].to_bytes(
+        4, byteorder="little"
+    )
+
+    transaction_after_opcod_checksig_serialisation += sighash_type.to_bytes(
+        4, byteorder="little"
+    )
+
+    return transaction_after_opcod_checksig_serialisation.hex()
+
+
+def sha3_256Hash(msg):
+    hashBytes = hashlib.sha3_256(msg.encode("utf8")).digest()
+    return int.from_bytes(hashBytes, byteorder="big")
+
+
+def signECDSAsecp256k1(msg, privKey):
+    msgHash = sha3_256Hash(msg)
+    signature = secp256k1_generator.sign(privKey, msgHash)
+    return signature
+
+
+def verifyECDSAsecp256k1(msg, signature, pubKey):
+    msgHash = sha3_256Hash(msg)
+    valid = secp256k1_generator.verify(pubKey, msgHash, signature)
+    return valid
+
+
+# def verify_transaction(message, signature, public_key):
+#     vk = ecdsa.VerifyingKey.from_string(bytes.fromhex(public_key), curve=ecdsa.SECP256k1)
+#     print(vk.verify(bytes.fromhex(signature), bytes.fromhex(message), hashlib.sha256)) # True
 
 # For segwit transactions you HASH256 all of the transaction data except the marker, flag, witness fields.
 
@@ -12,10 +124,6 @@ def serialise_transaction(json_data, is_segwit):
     transaction_after_serialisation = json_data["version"].to_bytes(
         4, byteorder="little"
     )
-    # logging.debug(transaction_after_serialisation)
-
-    # if is_segwit:
-    #     transaction_after_serialisation += b"\x00\x01"
 
     transaction_after_serialisation += helper.compact_size(len(json_data["vin"]))
 
@@ -28,23 +136,6 @@ def serialise_transaction(json_data, is_segwit):
     for vout in json_data["vout"]:
         transaction_after_serialisation += serialise_transaction_vout(vout)
 
-    # if is_segwit:
-    #     # The number of items to be pushed on to the stack as part of the unlocking code.
-    #     for vin in json_data["vin"]:
-    #         if "witness" in vin:
-    #             transaction_after_serialisation += helper.compact_size(
-    #                 len(vin["witness"])
-    #             )
-    #             for witness in vin["witness"]:
-    #                 witness_in_bytes = bytes.fromhex(witness)
-    #                 transaction_after_serialisation += helper.compact_size(
-    #                     len(witness_in_bytes)
-    #                 )
-    #                 transaction_after_serialisation += witness_in_bytes
-    #         else:
-    #             transaction_after_serialisation += b"\x00"
-
-    # locktime to 4 byte, little endian
     transaction_after_serialisation += json_data["locktime"].to_bytes(
         4, byteorder="little"
     )

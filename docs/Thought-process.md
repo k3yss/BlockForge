@@ -22,3 +22,12 @@ how to invalidate transactions:
 - How to do it in reference to grokkking bitcoin?
   - [claude-clarity](calude-clarity.md)
 
+
+- Signature verification:
+  -  https://sahaflores.medium.com/public-private-keys-generation-signature-verification-using-ecdsa-algorithm-51cb4f656257
+
+-  https://cryptobook.nakov.com/digital-signatures/ecdsa-sign-verify-messages
+
+- verifyECDSAsecp256k1
+
+- https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki

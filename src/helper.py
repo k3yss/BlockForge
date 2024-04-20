@@ -2,11 +2,52 @@ import os
 import json
 import hashlib
 import logging
+
+from pycoin.ecdsa.Generator import *
 from src.OP_CODE.op_code_implementation import *
+import ecdsa
+import codecs
+
+# import modular_sqrt from pycoin
+
 
 # from OP_CODE.op_code_implementation import *
 
 unique_OP_CODES = []
+
+
+# decompress a compressed public key into x and y values
+def decompress_pubkey(pk):
+    p = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
+    x = int.from_bytes(pk[1:33], byteorder="big")
+    y_sq = (pow(x, 3, p) + 7) % p
+    y = pow(y_sq, (p + 1) // 4, p)
+    if y % 2 != pk[0] % 2:
+        y = p - y
+    y = y.to_bytes(32, byteorder="big")
+    return y
+
+
+# incomplete for now
+def vin_message_serialize(vinData):
+    vin_serialized = bytes.fromhex(vinData["txid"])[::-1]
+    # ✅
+    vin_serialized += vinData["vout"].to_bytes(4, byteorder="little", signed=False)
+    # ✅
+    # only for the current tranasction we want to unlock
+    script_sig = bytes.fromhex(vinData["prevout"]["scriptpubkey"])
+    vin_serialized += compact_size(len(script_sig)) + script_sig
+    logging.debug(f"{len(script_sig)=}")
+    vin_serialized += vinData["sequence"].to_bytes(4, byteorder="little", signed=False)
+    return vin_serialized
+
+
+# incomplete for now
+def vout_message_serialize(tx_vout):
+    vout_serialized = tx_vout["value"].to_bytes(8, byteorder="little", signed=False)
+    script_pub_key = bytes.fromhex(tx_vout["scriptpubkey"])
+    vout_serialized += compact_size(len(script_pub_key)) + script_pub_key
+    return vout_serialized
 
 
 # https://learnmeabitcoin.com/technical/general/compact-size/
@@ -21,8 +62,10 @@ def compact_size(size):
         return b"\xff" + size.to_bytes(8, byteorder="little")
 
 
-def calculate_double_sha256_hash(data):
+def calculate_double_sha256_hash(data, reverseOutput=False):
     double_sha256_hash = calculate_sha256_hash(calculate_sha256_hash(data), False)
+    if reverseOutput:
+        return double_sha256_hash.hex()
     return double_sha256_hash[::-1].hex()
 
 
@@ -115,85 +158,14 @@ def seperate_sigwit_and_nonsigwit(json_data, filename):
 
 
 def signature_verification_stack(asm_instruction):
-    logging.debug(asm_instruction)
     stack = []
     index = 0
     asm_instruction_in_list = asm_instruction.split(" ")
-    # logging.debug(f"[LOG:]asm_instruction: { asm_instruction_in_list}")
 
     while index < len(asm_instruction_in_list):
         ins = asm_instruction_in_list[index]
-        # logging.debug(f"[LOG:]ins: {ins}")
-
         if ins[:3] == "OP_":
             index, stack = handle_opcode_stack(
                 ins, stack, index, asm_instruction_in_list
             )
-            # https://en.bitcoin.it/wiki/Script
-            if ins[:13] == "OP_PUSHBYTES_":
-                logging.debug(ins)
-                bytes_to_be_pushed = int(ins[13:])
-                logging.debug(bytes_to_be_pushed)
-                stack.append(asm_instruction_in_list[index + 1][bytes_to_be_pushed:])
-                logging.error(len(asm_instruction_in_list[index + 1]))
-                if (
-                    int(len(asm_instruction_in_list[index + 1]) / 2)
-                    == bytes_to_be_pushed
-                ):
-                    stack.append(asm_instruction_in_list[index + 1])
-                logging.debug(stack)
-            elif ins == "OP_EQUALVERIFY":
-                """
-                OP_EQUAL 	135 	0x87 	x1 x2 	True / false 	Returns 1 if the inputs are exactly equal, 0 otherwise.
-                OP_EQUALVERIFY 	136 	0x88 	x1 x2 	Nothing / fail 	Same as OP_EQUAL, but runs OP_VERIFY afterward.
-                """
-                stack_top = stack.pop()
-                stack_top_2 = stack.pop()
-                if stack_top == stack_top_2:
-                    pass
-                else:
-                    logging.debug("[LOG:] OP_EQUALVERIFY Signature verification failed")
-                    break
-
-            elif ins == "OP_CHECKSIG":
-                # https://en.bitcoin.it/wiki/OP_CHECKSIG
-                """
-                OP_CHECKSIG 	172 	0xac 	sig pubkey 	True / false 	The entire transaction's outputs, inputs, and script (from the most recently-executed OP_CODESEPARATOR to the end) are hashed. The signature used by OP_CHECKSIG must be a valid signature for this hash and public key. If it is, 1 is returned, 0 otherwise.
-                """
-                # expects if there is two elements in the stack
-                if len(stack) < 2:
-                    public_key = stack.pop()
-                    signature = (
-                        stack.pop()
-                    )  # Signature format is [<DER signature> <1 byte hash-type>]
-                    logging.CRITICAL(f"[LOG:] Signature is {signature}")
-                    """
-                    A new subScript is created from the scriptCode (the scriptCode is the actually executed script - either the scriptPubKey for non-segwit, non-P2SH scripts, or the redeemscript in non-segwit P2SH scripts). The script from the immediately after the most recently parsed OP_CODESEPARATOR to the end of the script is the subScript. If there is no OP_CODESEPARATOR the entire script becomes the subScript
-                    """
-                else:
-                    logging.debug("Signature verification failed")
-                    # break
-                """
-                These are, in order of stack depth, the public key and the signature of the script
-                """
-
-                # logging.debug(ins)
-                # logging.debug(stack)
-
-            elif ins == "OP_HASH160":
-                """
-                The input is hashed twice: first with SHA-256 and then with RIPEMD-160.
-                """
-                stack_top = stack.pop()
-                sha_256_hash_value = calculate_sha256_hash(stack_top)
-                ripemd160_hash_value = calculate_ripemd160_hash(sha_256_hash_value)
-                stack.append(ripemd160_hash_value)
-                logging.debug(
-                    f"[LOG:] logging.debuging the ripemd160_hash_value: {ripemd160_hash_value}"
-                )
-            elif ins == "OP_DUP":
-                # OP_DUP 	118 	0x76 	x 	x x 	Duplicates the top stack item.
-                stack.append(stack[-1])
         index = index + 1
-
-    # logging.debug(f"[LOG:]unique_OP_CODES: {unique_OP_CODES}")

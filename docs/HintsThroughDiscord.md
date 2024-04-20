@@ -24,3 +24,8 @@ basic procedure is this, you have do research for the whole thing.
 
 - So we cannot include transactions that have a future UNIX timestamp?
   - Yep   
+
+- In the output.txt file we have to write txids in reverse byte order right?
+
+- For anyone here who's having difficulty understanding/parsing scripts
+https://github.com/bitcoin-core/btcdeb

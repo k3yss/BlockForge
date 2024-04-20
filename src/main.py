@@ -68,7 +68,7 @@ def main():
                     json_data, helper.is_sigwit(json_data)
                 )
                 # check_validity(json_data)
-    logging.info(
+    logging.debug(
         f"[LOG:]Different vin scriptpubkey types: {different_vin_scriptpubkey_types}"
     )
     logging.debug(

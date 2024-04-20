@@ -2,6 +2,7 @@
 
 {
 
+	packages = [pkgs.btcdeb];
 	difftastic.enable = true;
 
 	languages.python = {

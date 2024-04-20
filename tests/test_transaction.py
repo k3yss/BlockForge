@@ -4,6 +4,7 @@ from src.transaction import *
 from src.helper import calculate_double_sha256_hash, calculate_sha256_hash
 import json
 import sys
+import binascii
 import logging
 
 
@@ -53,6 +54,53 @@ class TestTransaction(unittest.TestCase):
                 calculated_filename = calculate_sha256_hash(txid).hex()
 
                 self.assertEqual(calculated_filename, expected_nonsigwit_filename)
+
+    def test_serialize_for_OP_CHECKSIG(self):
+        non_segwit_json_files = [
+            "0a8b21af1cfcc26774df1f513a72cd362a14f5a598ec39d915323078efb5a240.json",
+        ]
+
+        signature = "30450221008f619822a97841ffd26eee942d41c1c4704022af2dd42600f006336ce686353a0220659476204210b21d605baab00bef7005ff30e878e911dc99413edb6c1e022acd01"
+        public_key = (
+            "02c371793f2e19d1652408efef67704a2e9953a43a9dd54360d56fc93277a5667d"
+        )
+
+        r, s, ht = dissect_signature(signature)
+
+        pub_key_x = int(public_key[2:], 16)
+
+        pub_key_y = binascii.hexlify(
+            helper.decompress_pubkey(
+                binascii.unhexlify(
+                    "0229b3e0919adc41a316aad4f41444d9bf3a9b639550f2aa735676ffff25ba3898"
+                )
+            )
+        ).decode()
+
+        pub_key_y = int(pub_key_y, 16)
+
+        new_signature = []
+        new_signature.append(int(r, 16))
+        new_signature.append(int(s, 16))
+
+        # iterate over both the files
+        for non_segwit_json_file in non_segwit_json_files:
+            with open(
+                os.path.join(
+                    f"{self.json_data_folder}/non_segwit", non_segwit_json_file
+                ),
+                "r",
+            ) as f:
+                non_segwit_json_data = json.load(f)
+                serialized_transaction = message_serialize(non_segwit_json_data, 1)
+                logging.debug(serialized_transaction)
+                message = calculate_double_sha256_hash(serialized_transaction, True)
+                # message = calculate_sha256_hash(serialized_transaction, True).hex()
+
+                is_valid = verifyECDSAsecp256k1(
+                    message, new_signature, (pub_key_x, pub_key_y)
+                )
+                logging.debug(is_valid)
 
 
 if __name__ == "__main__":
