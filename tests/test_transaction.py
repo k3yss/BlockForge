@@ -65,23 +65,17 @@ class TestTransaction(unittest.TestCase):
             "02c371793f2e19d1652408efef67704a2e9953a43a9dd54360d56fc93277a5667d"
         )
 
-        r, s, ht = dissect_signature(signature)
+        r, s = dissect_signature(signature)
 
-        pub_key_x = int(public_key[2:], 16)
+        # convert r to integer
+        r = int(r, 16)
+        s = int(s, 16)
 
-        pub_key_y = binascii.hexlify(
-            helper.decompress_pubkey(
-                binascii.unhexlify(
-                    "0229b3e0919adc41a316aad4f41444d9bf3a9b639550f2aa735676ffff25ba3898"
-                )
-            )
-        ).decode()
+        hex_new_signature = [r, s]
 
-        pub_key_y = int(pub_key_y, 16)
+        uncompressed_pub_key = uncompress_pubkey(public_key)
 
-        new_signature = []
-        new_signature.append(int(r, 16))
-        new_signature.append(int(s, 16))
+        # logging.debug(f"{len(uncompressed_pub_key)=}")
 
         # iterate over both the files
         for non_segwit_json_file in non_segwit_json_files:
@@ -95,10 +89,13 @@ class TestTransaction(unittest.TestCase):
                 serialized_transaction = message_serialize(non_segwit_json_data, 1)
                 logging.debug(serialized_transaction)
                 message = calculate_double_sha256_hash(serialized_transaction, True)
+
+                # convert message to int
+                message = int(message, 16)
                 # message = calculate_sha256_hash(serialized_transaction, True).hex()
 
                 is_valid = verifyECDSAsecp256k1(
-                    message, new_signature, (pub_key_x, pub_key_y)
+                    message, hex_new_signature, uncompressed_pub_key
                 )
                 logging.debug(is_valid)
 

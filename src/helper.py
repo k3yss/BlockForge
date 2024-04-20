@@ -3,13 +3,11 @@ import json
 import hashlib
 import logging
 
-from pycoin.ecdsa.Generator import *
 from src.OP_CODE.op_code_implementation import *
 import ecdsa
 import codecs
 
 # import modular_sqrt from pycoin
-
 
 # from OP_CODE.op_code_implementation import *
 
@@ -25,7 +23,7 @@ def decompress_pubkey(pk):
     if y % 2 != pk[0] % 2:
         y = p - y
     y = y.to_bytes(32, byteorder="big")
-    return y
+    return pk[1:33] + y
 
 
 # incomplete for now

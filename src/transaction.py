@@ -2,8 +2,30 @@
 import logging
 
 from . import helper
-from pycoin.ecdsa.secp256k1 import secp256k1_generator
 import hashlib, secrets
+from ecdsa import VerifyingKey, SECP256k1
+from pyasn1.codec.der import decoder as asn1der
+
+
+from pycoin.ecdsa import generator_secp256k1, sign, verify
+import hashlib, secrets
+
+
+def sha3_256Hash(msg):
+    hashBytes = hashlib.sha3_256(msg.encode("utf8")).digest()
+    return int.from_bytes(hashBytes, byteorder="big")
+
+
+def signECDSAsecp256k1(msg, privKey):
+    # msgHash = sha3_256Hash(msg)
+    signature = sign(generator_secp256k1, privKey, msg)
+    return signature
+
+
+def verifyECDSAsecp256k1(msg, signature, pubKey):
+    # msgHash = sha3_256Hash(msg)
+    valid = verify(generator_secp256k1, pubKey, msg, signature)
+    return valid
 
 
 def parse_element(hex_str, offset, element_size):
@@ -55,7 +77,7 @@ def dissect_signature(hex_sig):
     ht, offset = parse_element(hex_sig, offset, 2)
     assert offset == len(hex_sig), "Wrong parsing."
 
-    return r, s, ht
+    return r, s
 
 
 # https://wiki.bitcoinsv.io/index.php/OP_CHECKSIG
@@ -94,28 +116,33 @@ def message_serialize(json_data, sighash_type=1) -> str:
     return transaction_after_opcod_checksig_serialisation.hex()
 
 
-def sha3_256Hash(msg):
-    hashBytes = hashlib.sha3_256(msg.encode("utf8")).digest()
-    return int.from_bytes(hashBytes, byteorder="big")
+def pow_mod(x, y, z):
+    "Calculate (x ** y) % z efficiently."
+    number = 1
+    while y:
+        if y & 1:
+            number = number * x % z
+        y >>= 1
+        x = x * x % z
+    return number
 
 
-def signECDSAsecp256k1(msg, privKey):
-    msgHash = sha3_256Hash(msg)
-    signature = secp256k1_generator.sign(privKey, msgHash)
-    return signature
+def uncompress_pubkey(compressed_key):
+    p = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
+    y_parity = int(compressed_key[:2]) - 2
+    x = int(compressed_key[2:], 16)
+    a = (pow_mod(x, 3, p) + 7) % p
+    y = pow_mod(a, (p + 1) // 4, p)
+    if y % 2 != y_parity:
+        y = -y % p
+    # uncompressed_key = '{:x}{:x}'.format(x, y)
+    return [x, y]
 
 
-def verifyECDSAsecp256k1(msg, signature, pubKey):
-    msgHash = sha3_256Hash(msg)
-    valid = secp256k1_generator.verify(pubKey, msgHash, signature)
-    return valid
-
-
-# def verify_transaction(message, signature, public_key):
-#     vk = ecdsa.VerifyingKey.from_string(bytes.fromhex(public_key), curve=ecdsa.SECP256k1)
-#     print(vk.verify(bytes.fromhex(signature), bytes.fromhex(message), hashlib.sha256)) # True
-
-# For segwit transactions you HASH256 all of the transaction data except the marker, flag, witness fields.
+# def verifyECDSAsecp256k1(msg, signature, pubKey):
+#     vk = VerifyingKey.from_string(bytes.fromhex(pubKey), curve=SECP256k1)
+#     valid = vk.verify(signature, bytes.fromhex(msg), hashlib.sha256)
+#     return valid
 
 
 # https://learnmeabitcoin.com/technical/transaction/#structure-witness
