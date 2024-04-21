@@ -2,14 +2,91 @@ import os
 import json
 import hashlib
 import logging
+from types import SimpleNamespace
 
 from src.OP_CODE.op_code_implementation import *
-import ecdsa
-import codecs
 
-# import modular_sqrt from pycoin
 
-# from OP_CODE.op_code_implementation import *
+class Vin_Prevout:
+    def __init__(self, vin_prevout) -> None:
+        self.scriptpubkey = vin_prevout.get("scriptpubkey")
+        self.scriptpubkey_asm = vin_prevout.get("scriptpubkey_asm")
+        self.scriptpubkey_type = vin_prevout.get("scriptpubkey_type")
+        self.scriptpubkey_address = vin_prevout.get("scriptpubkey_address")
+        self.value = vin_prevout.get("value")
+
+
+# 'scriptsig', 'inner_witnessscript_asm', 'prevout', 'inner_redeemscript_asm', 'is_coinbase', 'scriptsig_asm', 'txid', 'sequence', 'witness', 'vout'
+class Vin:
+    def __init__(self, vin_json_data) -> None:
+        self.txid = vin_json_data.get("txid")
+        self.vout = vin_json_data.get("vout")
+        self.prevout = Vin_Prevout(vin_json_data.get("prevout"))
+        self.scriptsig = vin_json_data.get("scriptsig", "")
+        self.scriptsig_asm = vin_json_data.get("scriptsig_asm", "")
+        self.witness = vin_json_data.get("witness")
+        self.is_coinbase = vin_json_data.get("is_coinbase")
+        self.sequence = vin_json_data.get("sequence")
+        self.inner_witnessscript_asm = vin_json_data.get("inner_witnessscript_asm", "")
+        self.inner_redeemscript_asm = vin_json_data.get("inner_redeemscript_asm", "")
+
+    # {'scriptsig', 'prevout', 'scriptsig_asm', 'txid', 'sequence', 'is_coinbase', 'vout'}
+    def verify_p2pkh(self):
+        pass
+
+    # {'scriptsig', 'prevout', 'is_coinbase', 'scriptsig_asm', 'txid', 'sequence', 'witness', 'vout'}
+    def v0_p2wpkh(self):
+        pass
+
+    # {'scriptsig', 'prevout', 'is_coinbase', 'scriptsig_asm', 'txid', 'sequence', 'witness', 'vout'}
+    def verify_v1_p2tr(self):
+        pass
+
+    # {'scriptsig', 'inner_witnessscript_asm', 'prevout', 'inner_redeemscript_asm', 'is_coinbase', 'scriptsig_asm', 'txid', 'sequence', 'witness', 'vout'
+    def verify_p2sh(self):
+        pass
+
+    # {'scriptsig', 'inner_witnessscript_asm', 'prevout', 'is_coinbase', 'scriptsig_asm', 'txid', 'sequence', 'witness', 'vout'
+    def verify_v0_p2wsh(self):
+        pass
+
+
+class Vout:
+    def __init__(self, vout_json_data) -> None:
+        self.scriptpubkey = vout_json_data.get("scriptpubkey")
+        self.scriptpubkey_asm = vout_json_data.get("scriptpubkey_asm")
+        self.scriptpubkey_type = vout_json_data.get("scriptpubkey_type")
+        self.scriptpubkey_address = vout_json_data.get("scriptpubkey_address")
+        self.value = vout_json_data.get("value")
+
+
+class Transaction:
+    def __init__(self, json_data):
+        self.version = json_data.get("version", 1)
+        self.locktime = json_data.get("locktime", 0)
+        self.vin = [Vin(vin) for vin in json_data.get("vin", [])]
+
+        # iterate over all the vins and pass it to the class
+        self.vout = [Vout(vout) for vout in json_data.get("vout", [])]
+
+        self.is_segwit = is_sigwit(json_data)
+
+    # unique_scriptpubkey_type={'v0_p2wpkh', 'p2sh', 'p2pkh', 'v1_p2tr', 'v0_p2wsh'}      │
+    def is_transaction_valid(self):
+        for vin in self.vin:
+            if vin.prevout.scriptpubkey_type == "p2pkh":
+                vin.verify_p2pkh()
+            elif vin.prevout.scriptpubkey_type == "v0_p2wpkh":
+                pass
+            elif vin.prevout.scriptpubkey_type == "p2sh":
+                pass
+            elif vin.prevout.scriptpubkey_type == "v1_p2tr":
+                pass
+            elif vin.prevout.scriptpubkey_type == "v0_p2wsh":
+                pass
+
+        return True
+
 
 unique_OP_CODES = []
 
@@ -167,3 +244,21 @@ def signature_verification_stack(asm_instruction):
                 ins, stack, index, asm_instruction_in_list
             )
         index = index + 1
+
+
+def amount_test(json_data):
+    input_amount = 0
+    output_amount = 0
+    for i in json_data["vin"]:
+        input_amount += int(i["prevout"]["value"])
+    for i in json_data["vout"]:
+        output_amount += int(i["value"])
+    if input_amount < output_amount:
+        return False
+    else:
+        return True
+
+
+def check_validity(json_data):
+    is_amount_test_passed = amount_test(json_data)
+    logging.debug("[LOG:]is_amount_test_passed: ", is_amount_test_passed)

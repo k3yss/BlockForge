@@ -51,6 +51,7 @@ class TestTransaction(unittest.TestCase):
                     non_segwit_json_data, False
                 )
                 txid = calculate_double_sha256_hash(serialized_transaction)
+                logging.debug(f"{txid=}")
                 calculated_filename = calculate_sha256_hash(txid).hex()
 
                 self.assertEqual(calculated_filename, expected_nonsigwit_filename)
