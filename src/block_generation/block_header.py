@@ -3,7 +3,9 @@ import random
 import logging
 from ..helper import *
 import time
-import transaction
+from ..transaction import serialise_transaction_vin, serialise_transaction_vout
+
+# import transaction
 
 
 # TODO Recheck the logic
@@ -62,21 +64,15 @@ def calculate_coinbase_transaction_hash():
         "locktime": 0,
         "vin": [
             {
-                "txid": "fb7fe37919a55dfa45a062f88bd3c7412b54de759115cb58c3b9b46ac5f7c925",
-                "vout": 1,
-                "prevout": {
-                    "scriptpubkey": "76a914286eb663201959fb12eff504329080e4c56ae28788ac",
-                    "scriptpubkey_address": "14gnf7L2DjBYKFuWb6iftBoWE9hmAoFbcF",
-                    "value": 433833,
-                },
-                "scriptsig": "4830450221008f619822a97841ffd26eee942d41c1c4704022af2dd42600f006336ce686353a0220659476204210b21d605baab00bef7005ff30e878e911dc99413edb6c1e022acd012102c371793f2e19d1652408efef67704a2e9953a43a9dd54360d56fc93277a5667d",
+                "txid": "0000000000000000000000000000000000000000000000000000000000000000",
+                "vout": 0xFFFFFFFF,
+                "scriptsig": "04233fa04e028b12",
                 "sequence": 4294967295,
             }
         ],
         "vout": [
             {
-                "scriptpubkey": "76a9141ef7874d338d24ecf6577e6eadeeee6cd579c67188ac",
-                "scriptpubkey_address": "13pjoLcRKqhzPCbJgYW77LSFCcuwmHN2qA",
+                "scriptpubkey": "41047eda6bd04fb27cab6e7c28c99b94977f073e912f25d1ff7165d9c95cd9bbe6da7e7ad7f2acb09e0ced91705f7616af53bee51a238b7dc527f2be0aa60469d140ac",
                 "value": 387156,
             }
         ],
@@ -91,12 +87,12 @@ def calculate_coinbase_transaction_hash():
 
     # Serialize each transaction input in the vin list.
     for vin in json_data["vin"]:
-        transaction_after_serialisation += transaction.serialise_transaction_vin(vin)
+        transaction_after_serialisation += serialise_transaction_vin(vin)
 
     transaction_after_serialisation += compact_size(len(json_data["vout"]))
 
     for vout in json_data["vout"]:
-        transaction_after_serialisation += transaction.serialise_transaction_vout(vout)
+        transaction_after_serialisation += serialise_transaction_vout(vout)
 
     transaction_after_serialisation += json_data["locktime"].to_bytes(
         4, byteorder="little"
@@ -105,7 +101,7 @@ def calculate_coinbase_transaction_hash():
 
 
 def calculate_block_header():
-    vesion_in_hex = 0x1
+    vesion_in_hex = 0x20000000
     difficultyTarget = (
         0x0000FFFF00000000000000000000000000000000000000000000000000000000
     )
@@ -113,30 +109,39 @@ def calculate_block_header():
         "4eda2b12862c3aff56323d76a33f0739c655249305ad68a49d73afd8b4ee6a89"
     ]
 
-    version = vesion_in_hex.to_bytes(4, byteorder="little", signed=False)
+    # block_header
 
-    while True:
-        random_hash = generate_random_hash()
-        if int.from_bytes(random_hash, byteorder="big") < difficultyTarget:
-            break
+    block_header = vesion_in_hex.to_bytes(4, byteorder="little", signed=False)
 
-    previousBlockHash = random_hash
+    # logging.debug(f'{version=}')
+
+    random_hash = "0000000000000000000000000000000000000000000000000000000000000000"
+
+    block_header += bytes.fromhex(random_hash)
 
     # A fingerprint for all of the transactions included in the block.
-    merkleRoot = calculate_merkle_root(transaction_list)
+
+    calculated_merkle_root = bytes.fromhex(calculate_merkle_root(transaction_list))
+
+    logging.debug(f"{len(calculated_merkle_root)=}")
+
+    block_header += calculated_merkle_root
 
     # get the current time as a Unix timestamp.
-    current_unix_timestap = int(time.time()).to_bytes(
-        4, byteorder="little", signed=False
-    )
+    block_header += int(time.time()).to_bytes(4, byteorder="little", signed=False)
 
     # The bits field is compact representation of the target at the time the block was mined.
 
     bits = 0x1F00FFFF
 
-    bits_in_bytes = bits.to_bytes(4, byteorder="little", signed=False)
+    block_header += bits.to_bytes(4, byteorder="little", signed=False)
 
-    nonce = random.randint(0, 2**32).to_bytes(4, byteorder="little", signed=False)
-    logging.debug(previousBlockHash)
+    nonce = 0
+    block_header += nonce.to_bytes(4, byteorder="little", signed=False)
+
+    transaction_count = len(transaction_list) + 1
+
+    logging.debug(block_header.hex())
+    logging.debug(len(block_header.hex()))
 
     coinbase_transaction_hash = calculate_coinbase_transaction_hash()

@@ -29,3 +29,7 @@ basic procedure is this, you have do research for the whole thing.
 
 - For anyone here who's having difficulty understanding/parsing scripts
 https://github.com/bitcoin-core/btcdeb
+
+- p2sh type transactions including both scriptsig and witness field are specific to Segwit transactions wrapped in p2sh, like p2sh-p2wpkh and p2sh-pwsh.
+
+In these script sig carries the redeem script and witness carries the signatures and public keys

@@ -1,29 +1,11 @@
 # A transaction classs with a constructor and a method to parse the transaction
+
 import logging
-
 from . import helper
-import hashlib, secrets
-from ecdsa import VerifyingKey, SECP256k1
-from pyasn1.codec.der import decoder as asn1der
-
-
-from pycoin.ecdsa import generator_secp256k1, sign, verify
-import hashlib, secrets
-
-
-def sha3_256Hash(msg):
-    hashBytes = hashlib.sha3_256(msg.encode("utf8")).digest()
-    return int.from_bytes(hashBytes, byteorder="big")
-
-
-def signECDSAsecp256k1(msg, privKey):
-    # msgHash = sha3_256Hash(msg)
-    signature = sign(generator_secp256k1, privKey, msg)
-    return signature
+from pycoin.ecdsa import generator_secp256k1, verify
 
 
 def verifyECDSAsecp256k1(msg, signature, pubKey):
-    # msgHash = sha3_256Hash(msg)
     valid = verify(generator_secp256k1, pubKey, msg, signature)
     return valid
 
@@ -137,12 +119,6 @@ def uncompress_pubkey(compressed_key):
         y = -y % p
     # uncompressed_key = '{:x}{:x}'.format(x, y)
     return [x, y]
-
-
-# def verifyECDSAsecp256k1(msg, signature, pubKey):
-#     vk = VerifyingKey.from_string(bytes.fromhex(pubKey), curve=SECP256k1)
-#     valid = vk.verify(signature, bytes.fromhex(msg), hashlib.sha256)
-#     return valid
 
 
 # https://learnmeabitcoin.com/technical/transaction/#structure-witness
