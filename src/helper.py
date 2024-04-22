@@ -28,6 +28,14 @@ class Vin:
         self.inner_witnessscript_asm = vin_json_data.get("inner_witnessscript_asm", "")
         self.inner_redeemscript_asm = vin_json_data.get("inner_redeemscript_asm", "")
 
+    def serialise_transaction_vin(self):
+        vin_serialized = bytes.fromhex(self.txid)[::-1]
+        vin_serialized += self.vout.to_bytes(4, byteorder="little", signed=False)
+        script_sig = bytes.fromhex(self.prevout.scriptpubkey)
+        vin_serialized += compact_size(len(script_sig)) + script_sig
+        vin_serialized += self.sequence.to_bytes(4, byteorder="little", signed=False)
+        return vin_serialized
+
     # {'scriptsig', 'prevout', 'scriptsig_asm', 'txid', 'sequence', 'is_coinbase', 'vout'}
     def verify_p2pkh(self, OP_CODE_INST, serialized_transaction):
         check_validity = signature_verification_stack(
@@ -84,6 +92,15 @@ class Vout:
     def vout_message_serialize_interface(self):
         vout_serialized = self.value.to_bytes(8, byteorder="little", signed=False)
         script_pub_key = bytes.fromhex(self.scriptpubkey)
+        vout_serialized += compact_size(len(script_pub_key)) + script_pub_key
+        return vout_serialized
+
+    def serialise_transaction_vout(self):
+        # Previous Transaction Hash, 32 bytes (little-endian)
+        vout_serialized = self.value.to_bytes(8, byteorder="little", signed=False)
+        # The size in bytes of the upcoming ScriptPubKey.
+        script_pub_key = bytes.fromhex(self.scriptpubkey)
+        # The unlocking code for the output you want to spend.
         vout_serialized += compact_size(len(script_pub_key)) + script_pub_key
         return vout_serialized
 
@@ -209,6 +226,24 @@ class Transaction:
 
         return transaction_after_opcod_checksig_serialisation.hex()
 
+    def serialise_transaction(self):
+        # version to 4 byte, little endian
+        transaction_after_serialisation = self.version.to_bytes(4, byteorder="little")
+
+        transaction_after_serialisation += compact_size(len(self.vin))
+
+        # Serialize each transaction input in the vin list.
+        for vin in self.vin:
+            transaction_after_serialisation += vin.serialise_transaction_vin()
+
+        transaction_after_serialisation += compact_size(len(self.vout))
+
+        for vout in self.vout:
+            transaction_after_serialisation += vout.serialise_transaction_vout()
+
+        transaction_after_serialisation += self.locktime.to_bytes(4, byteorder="little")
+        return transaction_after_serialisation.hex()
+
 
 unique_OP_CODES = []
 
@@ -292,19 +327,6 @@ def is_sigwit(json_data):
     return is_sigwit
 
 
-def seperate_sigwit_and_nonsigwit(json_data, filename):
-    is_tx_sigwit = is_sigwit(json_data)
-    if is_tx_sigwit == True:
-        target_dir = "target/sigwit/"
-    else:
-        target_dir = "target/non_sigwit/"
-    os.makedirs(target_dir, exist_ok=True)
-    target_file_path = os.path.join(target_dir, filename)
-
-    with open(target_file_path, "w") as f_target:
-        json.dump(json_data, f_target, indent=4)
-
-
 # Calculate again
 """ unique_OP_CODES: [
 'OP_PUSHBYTES_71', 
@@ -342,21 +364,3 @@ def signature_verification_stack(asm_instruction_in_list, serialized_transaction
                 return True
             elif status == transaction_verification_status.pending:
                 index = index + 1
-
-
-def amount_test(json_data):
-    input_amount = 0
-    output_amount = 0
-    for i in json_data["vin"]:
-        input_amount += int(i["prevout"]["value"])
-    for i in json_data["vout"]:
-        output_amount += int(i["value"])
-    if input_amount < output_amount:
-        return False
-    else:
-        return True
-
-
-def check_validity(json_data):
-    is_amount_test_passed = amount_test(json_data)
-    logging.debug("[LOG:]is_amount_test_passed: ", is_amount_test_passed)
