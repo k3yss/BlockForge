@@ -1,0 +1,11 @@
+black==23.11.0
+click==8.1.7
+ecdsa==0.19.0
+mypy_extensions==1.0.0
+packaging==23.2
+pathspec==0.11.2
+platformdirs==4.0.0
+pre_commit==3.6.2
+pyasn1==0.6.0
+pycoin==0.70
+six==1.16.0
