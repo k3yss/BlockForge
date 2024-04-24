@@ -10,17 +10,28 @@ import logging
 
 
 class TestBlockHeader(unittest.TestCase):
-    # def test_serialize_for_OP_CHECKSIG(self):
-    #     transaction_list = [
-    #         "4eda2b12862c3aff56323d76a33f0739c655249305ad68a49d73afd8b4ee6a89",
-    #         "fbcca1ef33984eaad190fb0f481ac0f8c9d2f0baf7718794ef596f74abef2837",
-    #     ]
-
-    #     tmp = calculate_merkle_root(transaction_list)
-    #     logging.debug(tmp)
+    transaction_list = [
+        "0843a125fdce55b2c87431a295a90732d02e8e547fb0b8e53e9c088d9e2e441b",
+        "e2dbcac985d31594ffa1193638e6fa07c948ba8199158b9bcdc4ea2a39dadc50",
+        "1d9e3caa9bcda611782372d0186a69bc20759f65a10e6566cb79a375bd5343de",
+        "4e4b14e0d955bfa053ce4a7c3245ab1253406b480f70247d7a5ba92636d13926",
+        "30296c8fd2fc9ef712dd572846767e4f8bd09788350ead55456e57db2fa22e45",
+        "2b7222221ef1f49b38f0b7d5ce04a312dd4c56492ef4ca45fdaa57f419a4f2d4",
+        "379c9c1070725589a0fa9626a59bfab6de21a50e600815be7d6af70edf059f3c",
+    ]
 
     def test_calculate_block_header(self):
-        calculate_block_header()
+        block_header = calculate_block_header(self.transaction_list).hex()
+        logging.debug(block_header)
+
+    def test_merkle_root_generation(self):
+        # transaction_list = [
+        #     "0843a125fdce55b2c87431a295a90732d02e8e547fb0b8e53e9c088d9e2e441b",
+        #     "e2dbcac985d31594ffa1193638e6fa07c948ba8199158b9bcdc4ea2a39dadc50",
+        # ]
+
+        result = calculate_merkle_root(self.transaction_list)
+        logging.debug(f"{result=}")
 
 
 if __name__ == "__main__":

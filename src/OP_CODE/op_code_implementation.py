@@ -82,7 +82,6 @@ def handle_opcode_stack(
             return index, stack, transaction_verification_status.failed
 
     elif opcode == "OP_HASH160":
-        # from src.helper import calculate_sha256_hash, calculate_ripemd160_hash
         from ..helper import calculate_sha256_hash, calculate_ripemd160_hash
 
         """

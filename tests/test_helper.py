@@ -6,6 +6,7 @@ from src.OP_CODE.op_code_implementation import handle_opcode_stack
 class TestHelper(unittest.TestCase):
     def test_OP_PUSHBYTES(self):
         opcode = "OP_PUSHBYTES_72"
+        serialized_transaction = ""
         asm_instruction_in_list = [
             "OP_PUSHBYTES_72",
             "30450221009eb05e52c05023c4239806f6ad4bf5595e6d81fee329e3794f38259170e4d8b302200a1f7174be46c657dab0449ecaa9002a4480a7ba6bef26492e2990e6426fe55a01",
@@ -13,24 +14,30 @@ class TestHelper(unittest.TestCase):
         stack = []
         index = 0
         expectedOutput = 1, [
-            "30450221009eb05e52c05023c4239806f6ad4bf5595e6d81fee329e3794f38259170e4d8b302200a1f7174be46c657dab0449ecaa9002a4480a7ba6bef26492e2990e6426fe55a01"
+            "30450221009eb05e52c05023c4239806f6ad4bf5595e6d81fee329e3794f38259170e4d8b302200a1f7174be46c657dab0449ecaa9002a4480a7ba6bef26492e2990e6426fe55a01",
+            transaction_verification_status.pending,
         ]
         self.assertEqual(
-            handle_opcode_stack(opcode, stack, index, asm_instruction_in_list),
+            handle_opcode_stack(
+                opcode, stack, index, asm_instruction_in_list, serialized_transaction
+            ),
             expectedOutput,
         )
 
     def test_OP_EQUALVERIFY(self):
         opcode = "OP_EQUALVERIFY"
         asm_instruction_in_list = [""]
+        serialized_transaction = ""
         stack = [
             "30450221009eb05e52c05023c4239806f6ad4bf5595e6d81fee329e3794f38259170e4d8b302200a1f7174be46c657dab0449ecaa9002a4480a7ba6bef26492e2990e6426fe55a01",
             "30450221009eb05e52c05023c4239806f6ad4bf5595e6d81fee329e3794f38259170e4d8b302200a1f7174be46c657dab0449ecaa9002a4480a7ba6bef26492e2990e6426fe55a01",
         ]
         index = 0
-        expectedOutput = (0, [])
+        expectedOutput = (0, [], transaction_verification_status.pending)
         self.assertEqual(
-            handle_opcode_stack(opcode, stack, index, asm_instruction_in_list),
+            handle_opcode_stack(
+                opcode, stack, index, asm_instruction_in_list, serialized_transaction
+            ),
             expectedOutput,
         )
 
@@ -47,6 +54,7 @@ class TestHelper(unittest.TestCase):
                 "30450221009eb05e52c05023c4239806f6ad4bf5595e6d81fee329e3794f38259170e4d8b302200a1f7174be46c657dab0449ecaa9002a4480a7ba6bef26492e2990e6426fe55a01",
                 "30450221009eb05e52c05023c4239806f6ad4bf5595e6d81fee329e3794f38259170e4d8b302200a1f7174be46c657dab0449ecaa9002a4480a7ba6bef26492e2990e6426fe55a01",
             ],
+            transaction_verification_status.pending,
         )
         self.assertEqual(
             handle_opcode_stack(opcode, stack, index, asm_instruction_in_list),
