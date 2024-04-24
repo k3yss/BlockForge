@@ -1,7 +1,4 @@
 import unittest
-
-# from src.transaction import *
-from src.helper import calculate_double_sha256_hash, calculate_sha256_hash
 from src.block_generation.block_header import (
     calculate_block_header,
     calculate_merkle_root,
@@ -21,17 +18,17 @@ class TestBlockHeader(unittest.TestCase):
     ]
 
     def test_calculate_block_header(self):
+        # probably a useless test
+        expected_block_header = "000000200000000000000000000000000000000000000000000000000000000000000000ca9c5c00c212be7a17ab9756a032a8fc9f9fcd0b5eafb27145fb18d9ecf85998c2542966ffff001f01090300"
         block_header = calculate_block_header(self.transaction_list).hex()
-        logging.debug(block_header)
+        self.assertNotEqual(block_header, expected_block_header)
 
     def test_merkle_root_generation(self):
-        # transaction_list = [
-        #     "0843a125fdce55b2c87431a295a90732d02e8e547fb0b8e53e9c088d9e2e441b",
-        #     "e2dbcac985d31594ffa1193638e6fa07c948ba8199158b9bcdc4ea2a39dadc50",
-        # ]
-
+        expected_result = (
+            "ca9c5c00c212be7a17ab9756a032a8fc9f9fcd0b5eafb27145fb18d9ecf85998"
+        )
         result = calculate_merkle_root(self.transaction_list)
-        logging.debug(f"{result=}")
+        self.assertEqual(result, expected_result)
 
 
 if __name__ == "__main__":

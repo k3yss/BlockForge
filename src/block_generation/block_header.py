@@ -1,17 +1,5 @@
-import logging
 from ..helper import *
 import time
-from ..transaction import serialise_transaction_vin, serialise_transaction_vout
-from hashlib import sha256
-
-
-def hash256(data):
-    """
-    Hashes the provided data using SHA-256 twice.
-    """
-    h1 = sha256(bytes.fromhex(data)).digest()
-
-    return sha256(h1).hexdigest()
 
 
 def reverse_hex(data):
@@ -40,8 +28,8 @@ def calculate_merkle_root(txids):
         next_level = []
 
         for i in range(0, len(level), 2):
-            pair_hash = hash256(
-                level[i] + level[i + 1] if i + 1 < len(level) else level[i] * 2
+            pair_hash = calculate_double_sha256_hash(
+                level[i] + level[i + 1] if i + 1 < len(level) else level[i] * 2, True
             )
             next_level.append(pair_hash)
 
@@ -51,8 +39,6 @@ def calculate_merkle_root(txids):
 
 
 def calculate_coinbase_transaction_hash(coinbase_json_data):
-    # transaction = Transaction(json_data)
-
     segwit_transaction = Transaction(coinbase_json_data)
 
     serialised_transaction = segwit_transaction.serialise_transaction(True)
@@ -90,21 +76,16 @@ def calculate_block_header(transaction_list: list):
     random_hash = "0000000000000000000000000000000000000000000000000000000000000000"
     block_header += bytes.fromhex(random_hash)
 
-    # A fingerprint for all of the transactions included in the block.
-    # tmp = "62ee903bc68e48d444d4de4cb1c4514c5f9dcaa617bbdcd9558fe338be504869"
+    merkle_root_value = calculate_merkle_root(transaction_list)
 
-    tmp = calculate_merkle_root(transaction_list)
-
-    if tmp is not None:
-        logging.debug(f"{len(tmp)}=")
-        calculated_merkle_root = bytes.fromhex(tmp)
+    if merkle_root_value is not None:
+        calculated_merkle_root = bytes.fromhex(merkle_root_value)
         block_header += calculated_merkle_root
 
     # get the current time as a Unix timestamp.
     block_header += int(time.time()).to_bytes(4, byteorder="little", signed=False)
 
     # The bits field is compact representation of the target at the time the block was mined.
-
     block_header += bits.to_bytes(4, byteorder="little", signed=False)
 
     initial_nonce = 0
@@ -113,16 +94,3 @@ def calculate_block_header(transaction_list: list):
     block_header += calculated_nonce_value.to_bytes(4, byteorder="little", signed=False)
 
     return block_header
-
-
-# def generate_block():
-#     block_header = calculate_block_header()
-
-#     coinbase_transaction_hash = calculate_coinbase_transaction_hash()
-
-#     # transaction_count = len(transaction_list) + 1
-
-#     logging.debug(block_header.hex())
-#     # logging.debug(len(block_header.hex()))
-
-#     coinbase_transaction_hash = calculate_coinbase_transaction_hash()

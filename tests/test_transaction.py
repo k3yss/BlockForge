@@ -129,35 +129,35 @@ class TestTransaction(unittest.TestCase):
     #             )
     #             logging.debug(is_valid)
 
-    # def test_p2pkh_check_validity(self):
-    #     non_segwit_json_files = [
-    #         "b55fc19c0e36711574e042fc2aaf57f84768edf5c21f7bf51bf4a6999579465b.json",
-    #     ]
-    #     for non_segwit_json_file in non_segwit_json_files:
-    #         with open(
-    #             os.path.join(
-    #                 f"{self.json_data_folder}/non_segwit", non_segwit_json_file
-    #             ),
-    #             "r",
-    #         ) as f:
-    #             json_data = json.load(f)
-    #             transaction_interface = Transaction(json_data)
-    #             is_transaction_valid = transaction_interface.is_transaction_valid()
-    #             logging.debug(is_transaction_valid)
+    def test_p2pkh_check_validity(self):
+        non_segwit_json_files = [
+            "b55fc19c0e36711574e042fc2aaf57f84768edf5c21f7bf51bf4a6999579465b.json",
+        ]
+        for non_segwit_json_file in non_segwit_json_files:
+            with open(
+                os.path.join(
+                    f"{self.json_data_folder}/non_segwit", non_segwit_json_file
+                ),
+                "r",
+            ) as f:
+                json_data = json.load(f)
+                transaction_interface = Transaction(json_data)
+                is_transaction_valid = transaction_interface.is_transaction_valid()
+                logging.debug(is_transaction_valid)
 
-    # def test_p2wpkh_check_validity(self):
-    #     p2wpkh_json_files = [
-    #         "0a3c3139b32f021a35ac9a7bef4d59d4abba9ee0160910ac94b4bcefb294f196.json",
-    #     ]
-    #     for p2wpkh_json_file in p2wpkh_json_files:
-    #         with open(
-    #             os.path.join(f"{self.json_data_folder}/p2wpkh", p2wpkh_json_file),
-    #             "r",
-    #         ) as f:
-    #             json_data = json.load(f)
-    #             transaction_interface = Transaction(json_data)
-    #             is_transaction_valid = transaction_interface.is_transaction_valid()
-    #             logging.debug(is_transaction_valid)
+    def test_p2wpkh_check_validity(self):
+        p2wpkh_json_files = [
+            "0a3c3139b32f021a35ac9a7bef4d59d4abba9ee0160910ac94b4bcefb294f196.json",
+        ]
+        for p2wpkh_json_file in p2wpkh_json_files:
+            with open(
+                os.path.join(f"{self.json_data_folder}/p2wpkh", p2wpkh_json_file),
+                "r",
+            ) as f:
+                json_data = json.load(f)
+                transaction_interface = Transaction(json_data)
+                is_transaction_valid = transaction_interface.is_transaction_valid()
+                logging.debug(is_transaction_valid)
 
 
 if __name__ == "__main__":

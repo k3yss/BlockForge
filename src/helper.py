@@ -1,9 +1,6 @@
-import os
-import json
 import hashlib
 import logging
 from src.OP_CODE.op_code_implementation import *
-import struct
 
 
 class Vin_Prevout:
@@ -162,31 +159,42 @@ class Transaction:
                 return True
 
             elif vin.prevout.scriptpubkey_type == "v0_p2wpkh":
-                # signature = vin.witness[0]
-                # public_key = vin.witness[1]
+                template_instruction = [
+                    "OP_DUP",
+                    "OP_HASH160",
+                    "OP_EQUAL",
+                    "OP_CHECKSIG",
+                ]
 
-                # sighash_type = signature[len(signature) - 2 :]
+                signature = vin.witness[0]
+                public_key = vin.witness[1]
 
-                # script_sig_instructions = vin.prevout.scriptpubkey_asm.split(" ")
+                initial_stack = []
 
-                # INST = [signature, public_key] + script_sig_instructions
+                initial_stack.append(signature)
+                initial_stack.append(public_key)
 
-                # logging.debug(INST)
+                sighash_type = signature[len(signature) - 2 :]
 
-                # if sighash_type == "01":
-                #     serialized_transaction = self.message_serialize_interface(
-                #         sighash_type
-                #     )
-                #     message = calculate_double_sha256_hash(serialized_transaction, True)
+                script_sig_instructions = vin.prevout.scriptpubkey_asm.split(" ")
 
-                #     message = int(message, 16)
+                logging.debug(f"{script_sig_instructions=}")
 
-                #     verification_status = vin.v0_p2wpkh(INST, message)
+                if script_sig_instructions[0] == "OP_0":
+                    # insert PKH at the third position of the template_instruction array and push the remaining elements by one
+                    template_instruction.insert(2, script_sig_instructions[1])
+                    template_instruction.insert(3, script_sig_instructions[2])
+                    # logging.debug(template_instruction)
 
-                #     if verification_status == False:
-                #         return False
-                #     elif verification_status == True:
-                #         individual_vin_check = individual_vin_check + 1
+                if sighash_type == "01":
+                    verification_status = vin.v0_p2wpkh(
+                        template_instruction, initial_stack
+                    )
+
+                    if verification_status == False:
+                        return False
+                    elif verification_status == True:
+                        individual_vin_check = individual_vin_check + 1
 
                 pass
             elif vin.prevout.scriptpubkey_type == "p2sh":
@@ -227,10 +235,6 @@ class Transaction:
         transaction_after_opcod_checksig_serialisation += int(
             sighash_type, 16
         ).to_bytes(4, byteorder="little")
-
-        # transaction_after_opcod_checksig_serialisation += sighash_type.to_bytes(
-        #     4, byteorder="little"
-        # )
 
         return transaction_after_opcod_checksig_serialisation.hex()
 
