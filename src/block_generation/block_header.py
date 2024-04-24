@@ -75,8 +75,6 @@ def mine_block(block_header, nonce):
 
         # Check if the block hash meets the difficulty target
         if int(block_hash, 16) < difficultyTarget:
-            # logging.debug(f"{block_hash=}")
-            # logging.debug(f"{nonce=}")
             return nonce  # Return the valid nonce
 
         nonce += 1

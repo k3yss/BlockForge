@@ -3,6 +3,7 @@ import json
 import hashlib
 import logging
 from src.OP_CODE.op_code_implementation import *
+import struct
 
 
 class Vin_Prevout:
@@ -30,6 +31,8 @@ class Vin:
 
     def serialise_transaction_vin(self):
         vin_serialized = bytes.fromhex(self.txid)[::-1]
+
+        # logging.debug(f"{len(vin_serialized)=}")
 
         vin_serialized += self.vout.to_bytes(4, byteorder="little", signed=False)
 
@@ -231,17 +234,24 @@ class Transaction:
 
         return transaction_after_opcod_checksig_serialisation.hex()
 
-    def serialise_transaction(self, wtxid=False):
-        # version to 4 byte, little endian
+    def serialise_transaction(self, full_serialisation=False):
+        # The version number for the transaction. Used to enable new features.
         transaction_after_serialisation = self.version.to_bytes(4, byteorder="little")
 
-        if self.is_segwit and wtxid:
+        # logging.debug(f"{transaction_after_serialisation.hex()}")
+
+        # Marker and Flag
+        if self.is_segwit and full_serialisation:
             # If the transaction is a segwit transaction, the 5th byte is 0x00.
             transaction_after_serialisation += b"\x00"
             transaction_after_serialisation += b"\x01"
 
+        # logging.debug(f"{transaction_after_serialisation.hex()}")
+
+        # Input count
         transaction_after_serialisation += compact_size(len(self.vin))
 
+        # logging.debug(f"{len(transaction_after_serialisation.hex())}")
         # Serialize each transaction input in the vin list.
 
         for vin in self.vin:
@@ -252,11 +262,11 @@ class Transaction:
         for vout in self.vout:
             transaction_after_serialisation += vout.serialise_transaction_vout()
 
-        if self.is_segwit and wtxid:
+        if self.is_segwit and full_serialisation:
             for vin in self.vin:
                 transaction_after_serialisation += compact_size(len(vin.witness))
                 for witness in vin.witness:
-                    transaction_after_serialisation += compact_size(len(witness))
+                    transaction_after_serialisation += compact_size(len(witness) // 2)
                     transaction_after_serialisation += bytes.fromhex(witness)
 
         transaction_after_serialisation += self.locktime.to_bytes(4, byteorder="little")
@@ -345,22 +355,6 @@ def is_sigwit(json_data):
     return is_sigwit
 
 
-# Calculate again
-""" unique_OP_CODES: [
-'OP_PUSHBYTES_71', 
-'OP_PUSHBYTES_33',
-'OP_PUSHBYTES_20', 
-'OP_PUSHBYTES_72',
-'OP_PUSHBYTES_70',
-'OP_PUSHBYTES_65'
-'OP_EQUALVERIFY',
-'OP_CHECKSIG',
-'OP_HASH160', 
-'OP_DUP',
-]
-"""
-
-
 def signature_verification_stack(asm_instruction_in_list, serialized_transaction):
     stack = []
     index = 0
@@ -386,8 +380,8 @@ def signature_verification_stack(asm_instruction_in_list, serialized_transaction
 
 def create_coinbase_transaction_json(wTXID_commitment):
     coinbase_json_data = {
-        "version": 2,
-        "locktime": 4294967295,
+        "version": 1,
+        "locktime": 0,
         "vin": [
             {
                 "txid": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -406,19 +400,18 @@ def create_coinbase_transaction_json(wTXID_commitment):
                 ],
                 "is_coinbase": True,
                 "sequence": 4294967295,
-                "inner_redeemscript_asm": "OP_0 OP_PUSHBYTES_20 15ff0337937ecadd10ce56ffdfd4674817613223",
             }
         ],
         "vout": [
             {
-                "scriptpubkey": "76a91471a3d2f54b0917dc9d2c877b2861ac52967dec7f88ac",
+                "scriptpubkey": "76a914edf10a7fac6b32e24daa5305c723f3de58db1bc888ac",
                 "scriptpubkey_asm": "OP_DUP OP_HASH160 OP_PUSHBYTES_20 71a3d2f54b0917dc9d2c877b2861ac52967dec7f OP_EQUALVERIFY OP_CHECKSIG",
                 "scriptpubkey_type": "p2pkh",
                 "scriptpubkey_address": "1BMscNZbFKdUDYi3bnF5XEmkWT3WPmRBDJ",
                 "value": 28278016,
             },
             {
-                "scriptpubkey": wTXID_commitment,
+                "scriptpubkey": f"6a24aa21a9ed{wTXID_commitment}",
                 "scriptpubkey_asm": "OP_HASH160 OP_PUSHBYTES_20 423877331b30a905240c7e1f2adee4ebaa47c5f6 OP_EQUAL",
                 "scriptpubkey_type": "p2sh",
                 "scriptpubkey_address": "37jAAWEdJ9D9mXybRobcveioxSkt7Lkwog",

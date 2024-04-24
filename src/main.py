@@ -42,8 +42,13 @@ def main():
                 valid_transaction_list.append(
                     helper.calculate_double_sha256_hash(serialised_transanction)
                 )
-                wtxid = transaction.serialise_transaction(True)
-                valid_transaction_wtxid_list.append(wtxid)
+                if transaction.is_segwit:
+                    wtxid = transaction.serialise_transaction(True)
+                else:
+                    wtxid = serialised_transanction
+                valid_transaction_wtxid_list.append(
+                    helper.calculate_double_sha256_hash(wtxid)
+                )
             else:
                 # logging.debug(f"File: {filename} ❌")
                 pass
@@ -73,7 +78,7 @@ def main():
     temp_file = "temp.txt"
 
     with open(temp_file, "w") as f:
-        f.write(f"{valid_transaction_list}")
+        f.write(f"{valid_transaction_wtxid_list}")
 
     output_file_path = "output.txt"
     with open(output_file_path, "w") as f:
@@ -84,7 +89,9 @@ def main():
 
         logging.debug(f"{concat_before_hash=}")
 
-        wTXID_commitment = helper.calculate_double_sha256_hash(concat_before_hash)
+        wTXID_commitment = helper.calculate_double_sha256_hash(concat_before_hash, True)
+
+        logging.debug(f"{wTXID_commitment=}")
 
         coinbase_json_data = helper.create_coinbase_transaction_json(wTXID_commitment)
 
