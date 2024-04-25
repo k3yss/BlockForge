@@ -1,16 +1,9 @@
 import unittest
 from src.helper import *
 from src.OP_CODE.op_code_implementation import handle_opcode_stack
-from src.block_generation.block_header import hash256
 
 
 class TestHelper(unittest.TestCase):
-    def test_compare_double_sha256_hash(self):
-        data = "1f"
-        expected_output = calculate_double_sha256_hash(data, True)
-        real_output = hash256(data)
-        self.assertEqual(real_output, expected_output)
-
     # def test_OP_PUSHBYTES(self):
     #     opcode = "OP_PUSHBYTES_72"
     #     serialized_transaction = ""

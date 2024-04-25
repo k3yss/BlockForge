@@ -21,6 +21,7 @@ class TestBlockHeader(unittest.TestCase):
         # probably a useless test
         expected_block_header = "000000200000000000000000000000000000000000000000000000000000000000000000ca9c5c00c212be7a17ab9756a032a8fc9f9fcd0b5eafb27145fb18d9ecf85998c2542966ffff001f01090300"
         block_header = calculate_block_header(self.transaction_list).hex()
+        logging.debug(block_header)
         self.assertNotEqual(block_header, expected_block_header)
 
     def test_merkle_root_generation(self):
