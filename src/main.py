@@ -31,6 +31,7 @@ def main():
             json_data = json.load(f)
 
             transaction = helper.Transaction(json_data)
+            # logging.debug(f"Checking validity for {filename}")
 
             validity = transaction.is_transaction_valid()
             if validity:

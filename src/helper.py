@@ -1,6 +1,7 @@
 import hashlib
 import logging
 from src.OP_CODE.op_code_implementation import *
+from src.helper import *
 
 
 # https://learnmeabitcoin.com/technical/general/compact-size/
@@ -63,7 +64,6 @@ class Vin:
     # {'scriptsig', 'prevout', 'is_coinbase', 'scriptsig_asm', 'txid', 'sequence', 'witness', 'vout'}
     def v0_p2wpkh(self, initial_stack_instruction, initial_stack, message):
         # convert instruction to p2pkh type structure
-        logging.debug(f"{initial_stack_instruction=}")
         check_validity = signature_verification_stack(
             initial_stack_instruction, message, initial_stack
         )
@@ -140,6 +140,7 @@ class Transaction:
 
     def calculate_segwit_message(self, expected_vin_index, sighash_type):
         # 1. Grab the version field (reusable)
+
         version = self.version.to_bytes(4, byteorder="little")
 
         version = version.hex()
@@ -150,7 +151,8 @@ class Transaction:
         for vin in self.vin:
             all_txid_plus_vout += vin.txid_plus_vout().hex()
 
-        hash256_inputs = calculate_double_sha256_hash(all_txid_plus_vout)
+        logging.debug(all_txid_plus_vout)
+        hash256_inputs = calculate_double_sha256_hash(all_txid_plus_vout, True)
 
         # 3. Serialize and hash the sequences for the inputs (reusable)
 
@@ -161,7 +163,7 @@ class Transaction:
             )
             sequence_value_hex = sequence_value_bytes.hex()
             serialise_and_hash_sequences = bytes.fromhex(
-                calculate_double_sha256_hash(sequence_value_hex)
+                calculate_double_sha256_hash(sequence_value_hex, True)
             )
 
         hash256_sequences = serialise_and_hash_sequences.hex()
@@ -198,7 +200,7 @@ class Transaction:
         for vout in self.vout:
             all_vout_serialised += vout.serialise_transaction_vout()
 
-        hash256_outputs = calculate_double_sha256_hash(all_vout_serialised.hex())
+        hash256_outputs = calculate_double_sha256_hash(all_vout_serialised.hex(), True)
 
         # segwit_message += compact_size()
 
@@ -226,7 +228,7 @@ class Transaction:
 
         preimage = preimage + sig_hash
 
-        message = calculate_double_sha256_hash(preimage)
+        message = calculate_double_sha256_hash(preimage, True)
 
         return message
 
@@ -271,7 +273,7 @@ class Transaction:
                 template_instruction = [
                     "OP_DUP",
                     "OP_HASH160",
-                    "OP_EQUAL",
+                    "OP_EQUALVERIFY",
                     "OP_CHECKSIG",
                 ]
 
@@ -285,10 +287,6 @@ class Transaction:
 
                 sighash_type = signature[len(signature) - 2 :]
 
-                message = self.calculate_segwit_message(
-                    expected_vin_index, sighash_type
-                )
-
                 script_sig_instructions = vin.prevout.scriptpubkey_asm.split(" ")
 
                 if script_sig_instructions[0] == "OP_0":
@@ -299,16 +297,25 @@ class Transaction:
                     initial_stack_instruction = template_instruction
 
                 if sighash_type == "01":
+                    message = self.calculate_segwit_message(
+                        expected_vin_index, sighash_type
+                    )
+
+                    message = int(message, 16)
                     verification_status = vin.v0_p2wpkh(
                         initial_stack_instruction, initial_stack, message
                     )
+
+                    logging.debug(f"{verification_status} for v0_p2wpkh")
 
                     if verification_status == False:
                         return False
                     elif verification_status == True:
                         individual_vin_check = individual_vin_check + 1
 
-                pass
+                    if len(self.vin) == individual_vin_check:
+                        return True
+
             elif vin.prevout.scriptpubkey_type == "p2sh":
                 pass
             elif vin.prevout.scriptpubkey_type == "v1_p2tr":
@@ -446,7 +453,7 @@ def calculate_ripemd160_hash(data):
 def is_sigwit(json_data):
     is_sigwit = False
     for i in json_data["vin"]:
-        if "witness" in i and i["witness"]:
+        if "witness" in i:
             is_sigwit = True
     return is_sigwit
 

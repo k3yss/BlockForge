@@ -11,7 +11,7 @@ class TestTransaction(unittest.TestCase):
 
     def test_p2wpkh_check_validity(self):
         p2wpkh_json_files = [
-            "0a3c3139b32f021a35ac9a7bef4d59d4abba9ee0160910ac94b4bcefb294f196.json",
+            "097a2c32c4871e6a248ff50ab714d42ad42b696f0a24471e90d7435d96ab86cf.json",
         ]
 
         for p2wpkh_json_file in p2wpkh_json_files:
@@ -22,53 +22,53 @@ class TestTransaction(unittest.TestCase):
                 json_data = json.load(f)
                 transaction_interface = Transaction(json_data)
                 is_transaction_valid = transaction_interface.is_transaction_valid()
-                # logging.debug(is_transaction_valid)
+                logging.debug(is_transaction_valid)
 
-    # def test_segwit_serialization(self):
-    #     segwit_json_files = [
-    #         "0ac4f7f16822968c9fbc25e811c8acc05f29cf442f26ddfd69c1074abede59c9.json",
-    #     ]
+    def test_segwit_serialization(self):
+        segwit_json_files = [
+            "0ac4f7f16822968c9fbc25e811c8acc05f29cf442f26ddfd69c1074abede59c9.json",
+        ]
 
-    #     # iterate it in reverse order
-    #     for segwit_json_file in reversed(segwit_json_files):
-    #         # load segwit json data
-    #         with open(
-    #             os.path.join(f"{self.json_data_folder}/segwit", segwit_json_file), "r"
-    #         ) as f:
-    #             segwit_json_data = json.load(f)
-    #             expected_sigwit_filename = segwit_json_file[:-5]
-    #             transaction = Transaction(segwit_json_data)
-    #             serialized_transaction = transaction.serialise_transaction()
-    #             # logging.debug(f"NEW: {serialized_transaction=}")
+        # iterate it in reverse order
+        for segwit_json_file in reversed(segwit_json_files):
+            # load segwit json data
+            with open(
+                os.path.join(f"{self.json_data_folder}/segwit", segwit_json_file), "r"
+            ) as f:
+                segwit_json_data = json.load(f)
+                expected_sigwit_filename = segwit_json_file[:-5]
+                transaction = Transaction(segwit_json_data)
+                serialized_transaction = transaction.serialise_transaction()
+                # logging.debug(f"NEW: {serialized_transaction=}")
 
-    #             txid = calculate_double_sha256_hash(serialized_transaction)
-    #             calculated_filename = calculate_sha256_hash(txid).hex()
-    #             self.assertEqual(calculated_filename, expected_sigwit_filename)
+                txid = calculate_double_sha256_hash(serialized_transaction)
+                calculated_filename = calculate_sha256_hash(txid).hex()
+                self.assertEqual(calculated_filename, expected_sigwit_filename)
 
-    # def test_non_segwit_serialization(self):
-    #     non_segwit_json_files = [
-    #         "0a8b21af1cfcc26774df1f513a72cd362a14f5a598ec39d915323078efb5a240.json",
-    #         "0a70cacb1ac276056e57ebfb0587d2091563e098c618eebf4ed205d123a3e8c4.json",
-    #     ]
+    def test_non_segwit_serialization(self):
+        non_segwit_json_files = [
+            "0a8b21af1cfcc26774df1f513a72cd362a14f5a598ec39d915323078efb5a240.json",
+            "0a70cacb1ac276056e57ebfb0587d2091563e098c618eebf4ed205d123a3e8c4.json",
+        ]
 
-    #     # iterate over both the files
-    #     for non_segwit_json_file in non_segwit_json_files:
-    #         with open(
-    #             os.path.join(
-    #                 f"{self.json_data_folder}/non_segwit", non_segwit_json_file
-    #             ),
-    #             "r",
-    #         ) as f:
-    #             expected_nonsigwit_filename = non_segwit_json_file[:-5]
-    #             non_segwit_json_data = json.load(f)
+        # iterate over both the files
+        for non_segwit_json_file in non_segwit_json_files:
+            with open(
+                os.path.join(
+                    f"{self.json_data_folder}/non_segwit", non_segwit_json_file
+                ),
+                "r",
+            ) as f:
+                expected_nonsigwit_filename = non_segwit_json_file[:-5]
+                non_segwit_json_data = json.load(f)
 
-    #             transaction = Transaction(non_segwit_json_data)
+                transaction = Transaction(non_segwit_json_data)
 
-    #             txid = calculate_double_sha256_hash(transaction.serialise_transaction())
-    #             logging.debug(f"{txid=}")
-    #             calculated_filename = calculate_sha256_hash(txid).hex()
+                txid = calculate_double_sha256_hash(transaction.serialise_transaction())
+                logging.debug(f"{txid=}")
+                calculated_filename = calculate_sha256_hash(txid).hex()
 
-    #             self.assertEqual(calculated_filename, expected_nonsigwit_filename)
+                self.assertEqual(calculated_filename, expected_nonsigwit_filename)
 
     # def test_serialize_for_OP_CHECKSIG(self):
     #     from src.transaction import (

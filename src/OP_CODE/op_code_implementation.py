@@ -27,7 +27,6 @@ class transaction_verification_status(Enum):
 def handle_opcode_stack(
     opcode, stack, index, asm_instruction_in_list, serialized_transaction
 ):
-    logging.debug(f"{stack=}")
     if opcode == "OP_EQUALVERIFY":
         stack_top = stack.pop()
         stack_top_2 = stack.pop()
@@ -88,7 +87,6 @@ def handle_opcode_stack(
         """
         The input is hashed twice: first with SHA-256 and then with RIPEMD-160. 
         """
-        logging.debug(f"{stack=} inside OP_HASH160")
         stack_top = stack.pop()
         sha_256_hash_value = calculate_sha256_hash(stack_top)
         ripemd160_hash_value = calculate_ripemd160_hash(sha_256_hash_value)
