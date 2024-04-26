@@ -10,7 +10,6 @@ def reverse_hex(data):
 
 
 def split_into_pairs(arr):
-    # logging.debug(len(arr))
     if len(arr) % 2 != 0:
         arr.append(arr[-1])
     return [arr[i : i + 2] for i in range(0, len(arr), 2)]

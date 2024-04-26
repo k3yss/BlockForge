@@ -55,8 +55,6 @@ class TestTransaction(unittest.TestCase):
             self.coinbase_json_data
         )
 
-        logging.debug(f"{coinbase_transaction_hash=}")
-
 
 if __name__ == "__main__":
     logging.basicConfig(

@@ -1,6 +1,7 @@
 import unittest
 import logging
-from src.helper import Transaction
+from src.helper import Transaction, calculate_ripemd160_hash
+from Crypto.Hash import RIPEMD160
 
 # version: 02000000
 # marker: 00
@@ -17,6 +18,11 @@ from src.helper import Transaction
 #   scriptpubkey: 76a914ce72abfd0e6d9354a660c18f2825eb392f060fdc88ac
 # witness: 00
 # locktime: 00000000
+
+
+def new_calculate_ripemd160_hash(data):
+    ripemd160_hash = RIPEMD160.new(data).hexdigest()
+    return ripemd160_hash
 
 
 class TestMessage(unittest.TestCase):
@@ -57,6 +63,12 @@ class TestMessage(unittest.TestCase):
         # seralised_trasansaction = transaction.serialise_transaction(True)
         message = transaction.calculate_segwit_message(0, "01")
         logging.debug(f"{message=}")
+
+    def test_ripemd(self):
+        msg = "123".encode()
+        expected = calculate_ripemd160_hash(msg)
+        real = new_calculate_ripemd160_hash(msg)
+        self.assertEqual(expected, real)
 
 
 if __name__ == "__main__":

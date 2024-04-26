@@ -31,10 +31,8 @@ def handle_opcode_stack(
         stack_top = stack.pop()
         stack_top_2 = stack.pop()
         if stack_top == stack_top_2:
-            # logging.debug("[LOG:] OP_EQUALVERIFY ✅")
             return index, stack, transaction_verification_status.pending
         else:
-            # logging.debug("[LOG:] OP_EQUALVERIFY ❌")
             return index, stack, transaction_verification_status.failed
 
     # https://wiki.bitcoinsv.io/index.php/OP_CHECKSIG
@@ -53,9 +51,6 @@ def handle_opcode_stack(
 
             hex_new_signature = [r, s]
 
-            # logging.debug(public_key)
-            # logging.debug(public_key[:2])
-
             if public_key[:2] != "04":
                 uncompressed_pub_key = uncompress_pubkey(public_key)
             else:
@@ -65,17 +60,13 @@ def handle_opcode_stack(
                 x = int(public_key[:half_length], 16)
                 y = int(public_key[half_length:], 16)
                 uncompressed_pub_key = [x, y]
-                # logging.debug(uncompressed_pub_key)
 
             is_valid = verifyECDSAsecp256k1(
                 serialized_transaction, hex_new_signature, uncompressed_pub_key
             )
-            # logging.debug(is_valid)
             if is_valid:
-                # logging.debug("[LOG:] Signature verification ✅")
                 return index, stack, transaction_verification_status.success
             elif not is_valid:
-                # logging.debug("[LOG:] Signature verification ❌")
                 return index, stack, transaction_verification_status.failed
 
         else:

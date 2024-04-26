@@ -2,6 +2,7 @@ import hashlib
 import logging
 from src.OP_CODE.op_code_implementation import *
 from src.helper import *
+from Crypto.Hash import RIPEMD160
 
 
 # https://learnmeabitcoin.com/technical/general/compact-size/
@@ -41,8 +42,6 @@ class Vin:
 
     def serialise_transaction_vin(self):
         vin_serialized = bytes.fromhex(self.txid)[::-1]
-
-        # logging.debug(f"{len(vin_serialized)=}")
 
         vin_serialized += self.vout.to_bytes(4, byteorder="little", signed=False)
 
@@ -92,7 +91,6 @@ class Vin:
         else:
             script_sig = bytes.fromhex("")
         vin_serialized += compact_size(len(script_sig)) + script_sig
-        # logging.debug(f"{len(script_sig)=}")
         vin_serialized += self.sequence.to_bytes(4, byteorder="little", signed=False)
         return vin_serialized
 
@@ -151,7 +149,6 @@ class Transaction:
         for vin in self.vin:
             all_txid_plus_vout += vin.txid_plus_vout().hex()
 
-        logging.debug(all_txid_plus_vout)
         hash256_inputs = calculate_double_sha256_hash(all_txid_plus_vout, True)
 
         # 3. Serialize and hash the sequences for the inputs (reusable)
@@ -306,8 +303,6 @@ class Transaction:
                         initial_stack_instruction, initial_stack, message
                     )
 
-                    logging.debug(f"{verification_status} for v0_p2wpkh")
-
                     if verification_status == False:
                         return False
                     elif verification_status == True:
@@ -353,20 +348,15 @@ class Transaction:
         # The version number for the transaction. Used to enable new features.
         transaction_after_serialisation = self.version.to_bytes(4, byteorder="little")
 
-        # logging.debug(f"{transaction_after_serialisation.hex()}")
-
         # Marker and Flag
         if self.is_segwit and full_serialisation:
             # If the transaction is a segwit transaction, the 5th byte is 0x00.
             transaction_after_serialisation += b"\x00"
             transaction_after_serialisation += b"\x01"
 
-        # logging.debug(f"{transaction_after_serialisation.hex()}")
-
         # Input count
         transaction_after_serialisation += compact_size(len(self.vin))
 
-        # logging.debug(f"{len(transaction_after_serialisation.hex())}")
         # Serialize each transaction input in the vin list.
 
         for vin in self.vin:
@@ -412,7 +402,6 @@ def vin_message_serialize(vinData):
     # only for the current tranasction we want to unlock
     script_sig = bytes.fromhex(vinData["prevout"]["scriptpubkey"])
     vin_serialized += compact_size(len(script_sig)) + script_sig
-    # logging.debug(f"{len(script_sig)=}")
     vin_serialized += vinData["sequence"].to_bytes(4, byteorder="little", signed=False)
     return vin_serialized
 
@@ -443,7 +432,8 @@ def calculate_sha256_hash(data, isHex=True):
 
 
 def calculate_ripemd160_hash(data):
-    ripemd160_hash = hashlib.new("ripemd160", data).hexdigest()
+    # ripemd160_hash = hashlib.new("ripemd160", data).hexdigest()
+    ripemd160_hash = RIPEMD160.new(data).hexdigest()
     return ripemd160_hash
 
 

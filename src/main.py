@@ -10,9 +10,6 @@ from src.block_generation.block_header import (
 )
 
 
-# create a key value pair with
-
-
 def main():
     """
     This function processes the files in the 'mempool' directory, performs various calculations,
@@ -31,7 +28,6 @@ def main():
             json_data = json.load(f)
 
             transaction = helper.Transaction(json_data)
-            # logging.debug(f"Checking validity for {filename}")
 
             validity = transaction.is_transaction_valid()
             if validity:
@@ -47,7 +43,6 @@ def main():
                     helper.calculate_double_sha256_hash(wtxid)
                 )
             else:
-                # logging.debug(f"File: {filename} ❌")
                 pass
 
     coinbase_wtxid = "0000000000000000000000000000000000000000000000000000000000000000"
@@ -65,11 +60,7 @@ def main():
         if witness_root_hash != None:
             concat_before_hash = witness_root_hash + witness_reserved_value
 
-        logging.debug(f"{concat_before_hash=}")
-
         wTXID_commitment = helper.calculate_double_sha256_hash(concat_before_hash, True)
-
-        logging.debug(f"{wTXID_commitment=}")
 
         coinbase_json_data = helper.create_coinbase_transaction_json(wTXID_commitment)
 
